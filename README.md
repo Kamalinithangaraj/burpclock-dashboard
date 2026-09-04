@@ -1,7 +1,6 @@
 # Burpclock Dashboard
 
-A simple restaurant operations dashboard - built as a portfolio project for
-a hospitality-tech internship application.
+A simple restaurant operations dashboard
 
 ## What it shows
 - Stat cards: total orders today, revenue, pending orders, average order value
