@@ -147,6 +147,11 @@
   <div class="panel">
     <h2>Recent Orders</h2>
     <input type="text" id="searchBox" placeholder="Search by customer or item...">
+    <select id="dateFilter">
+      <option value="all">All Dates</option>
+      <option value="today">Today</option>
+      <option value="week">This Week</option>
+    </select>
     <table>
       <thead>
         <tr><th>Order</th><th>Customer</th><th>Item</th><th>Amount</th><th>Status</th></tr>
@@ -165,13 +170,13 @@
 <script>
   // Sample data - stands in for what would normally come from a backend/database
   const orders = [
-    { id: "#1001", customer: "Ravi Kumar", item: "Chicken Biryani", amount: 220, status: "done" },
-    { id: "#1002", customer: "Anu Priya", item: "Masala Dosa", amount: 90, status: "preparing" },
-    { id: "#1003", customer: "Ravi Kumar", item: "Cold Coffee", amount: 70, status: "done" },
-    { id: "#1004", customer: "Suresh M", item: "Paneer Butter Masala", amount: 180, status: "pending" },
-    { id: "#1005", customer: "Divya S", item: "Veg Fried Rice", amount: 130, status: "preparing" },
-    { id: "#1006", customer: "Karthik R", item: "Gulab Jamun", amount: 60, status: "done" },
-    { id: "#1007", customer: "Anu Priya", item: "Chicken Biryani", amount: 220, status: "pending" },
+    { id: "#1001", customer: "Ravi Kumar", item: "Chicken Biryani", amount: 220, status: "done", date: "2026-09-05" },
+    { id: "#1002", customer: "Anu Priya", item: "Masala Dosa", amount: 90, status: "preparing", date: "2026-04-12" },
+    { id: "#1003", customer: "Ravi Kumar", item: "Cold Coffee", amount: 70, status: "done", date: "2026-05-29" },
+    { id: "#1004", customer: "Suresh M", item: "Paneer Butter Masala", amount: 180, status: "pending", date: "2026-07-25" },
+    { id: "#1005", customer: "Divya S", item: "Veg Fried Rice", amount: 130, status: "preparing", date: "2026-04-30" },
+    { id: "#1006", customer: "Karthik R", item: "Gulab Jamun", amount: 60, status: "done" , date: "2026-12-23"},
+    { id: "#1007", customer: "Anu Priya", item: "Chicken Biryani", amount: 220, status: "pending", date: "2026-03-05" },
   ];
 
   const topItems = [
@@ -229,6 +234,23 @@
       </div>
     `).join("");
   }
+  function applyFilters() {
+  const query = document.getElementById("searchBox").addEventListener("input", applyFilters);
+  const dateChoice = document.getElementById("dateFilter").addEventListener("change", applyFilters);
+  const today = "2026-09-05"; // update this to today's real date
+
+  let filtered = orders.filter(o =>
+    o.customer.toLowerCase().includes(query) ||
+    o.item.toLowerCase().includes(query)
+  );
+
+  if (dateChoice === "today") {
+    filtered = filtered.filter(o => o.date === today);
+  }
+  // "week" logic can be added later - keep it simple for now
+
+  renderOrders(filtered);
+}
 
   // Live search - filters the orders table as you type
   document.getElementById("searchBox").addEventListener("input", (e) => {
