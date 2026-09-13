@@ -10,7 +10,7 @@ A simple restaurant operations dashboard
 - A daily lucky draw that randomly picks one customer from today's orders, with the result saved so it persists on refresh
 
 ## Tech stack
-- Plain HTML, CSS, and JavaScript - no backend, no build tools, no installs required
+- Plain HTML, CSS, and JavaScript 
 - Data is sample data defined directly in the JavaScript (stands in for what
   a real backend/database would provide)
 
