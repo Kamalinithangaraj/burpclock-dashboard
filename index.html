@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Burpclock Dashboard</title>
+<style>
+  * { box-sizing: border-box; font-family: Arial, sans-serif; }
+
+  body {
+    margin: 0;
+    background: #f4f1ea;
+    color: #2b2b2b;
+  }
+
+  header {
+    background: #d9534f;
+    color: white;
+    padding: 20px 24px;
+  }
+
+  header h1 { margin: 0; font-size: 1.6rem; }
+  header p { margin: 4px 0 0; opacity: 0.9; font-size: 0.9rem; }
+
+  main {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .stat-card {
+    background: white;
+    border-radius: 10px;
+    padding: 18px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    border-left: 5px solid #d9534f;
+  }
+
+  .stat-card .label {
+    font-size: 0.85rem;
+    color: #777;
+    margin-bottom: 6px;
+  }
+
+  .stat-card .value {
+    font-size: 1.6rem;
+    font-weight: bold;
+  }
+
+  .panel {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    margin-bottom: 20px;
+  }
+
+  .panel h2 {
+    margin-top: 0;
+    font-size: 1.1rem;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th, td {
+    text-align: left;
+    padding: 10px 8px;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9rem;
+  }
+
+  th { color: #777; font-weight: 600; }
+
+  .status {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: bold;
+  }
+
+  .status.done { background: #dff0d8; color: #2b8a3e; }
+  .status.pending { background: #fcf0d9; color: #b8860b; }
+  .status.preparing { background: #dbe9fb; color: #2864b8; }
+
+  #searchBox {
+    width: 100%;
+    padding: 8px 10px;
+    margin-bottom: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+
+  #dateFilter {
+    padding: 8px 10px;
+    margin-bottom: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .bar-label {
+    width: 90px;
+    font-size: 0.85rem;
+    color: #555;
+  }
+
+  .bar-track {
+    flex: 1;
+    background: #eee;
+    border-radius: 6px;
+    overflow: hidden;
+    height: 18px;
+  }
+
+  .bar-fill {
+    background: #d9534f;
+    height: 100%;
+  }
+
+  .bar-value {
+    width: 40px;
+    font-size: 0.85rem;
+    text-align: right;
+  }
+
+  /* Lucky draw panel */
+  .draw-panel {
+    background: linear-gradient(135deg, #d9534f, #b8433f);
+    color: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+
+  .draw-panel h2 { margin-top: 0; font-size: 1.1rem; color: white; }
+
+  .draw-result {
+    font-size: 1.4rem;
+    font-weight: bold;
+    margin: 10px 0;
+    min-height: 34px;
+  }
+
+  .draw-sub {
+    font-size: 0.85rem;
+    opacity: 0.9;
+  }
+
+  #drawBtn {
+    background: white;
+    color: #d9534f;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-top: 8px;
+  }
+
+  #drawBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  #drawBtn:hover:not(:disabled) {
+    background: #f4f1ea;
+  }
+
+  @keyframes pop {
+    0% { transform: scale(0.85); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .draw-result.revealed {
+    animation: pop 0.35s ease-out;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Burpclock Dashboard</h1>
+  <p>Today's overview - orders, revenue &amp; top items</p>
+</header>
+
+<main>
+
+  <div class="stats" id="statsGrid"></div>
+
+  <div class="draw-panel">
+    <h2>🎉 Today's Lucky Draw</h2>
+    <div class="draw-result" id="drawResult">No winner picked yet</div>
+    <div class="draw-sub" id="drawSub">One customer from today's orders wins the daily draw.</div>
+    <button id="drawBtn">Pick Today's Winner</button>
+  </div>
+
+  <div class="panel">
+    <h2>Recent Orders</h2>
+    <input type="text" id="searchBox" placeholder="Search by customer or item...">
+    <select id="dateFilter">
+      <option value="all">All Dates</option>
+      <option value="today">Today</option>
+      <option value="week">This Week</option>
+    </select>
+    <table>
+      <thead>
+        <tr><th>Order</th><th>Customer</th><th>Item</th><th>Amount</th><th>Status</th></tr>
+      </thead>
+      <tbody id="ordersBody"></tbody>
+    </table>
+  </div>
+
+  <div class="panel">
+    <h2>Top Selling Items</h2>
+    <div id="topItems"></div>
+  </div>
+
+</main>
+
+<script>
+  // Sample data - stands in for what would normally come from a backend/database
+  // NOTE: dates are set relative to "today" at load time (see below) so the
+  // Today / This Week filters and the lucky draw always have live, working data
+  // instead of dates hardcoded to a fixed year that goes stale.
+
+  function isoDate(d) {
+    // returns YYYY-MM-DD in local time (avoids UTC off-by-one issues)
+    const yr = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${yr}-${mo}-${day}`;
+  }
+
+  function daysAgo(n) {
+    const d = new Date();
+    d.setDate(d.getDate() - n);
+    return isoDate(d);
+  }
+
+  const orders = [
+    { id: "#1001", customer: "Ravi Kumar", item: "Chicken Biryani", amount: 220, status: "done", date: daysAgo(0) },
+    { id: "#1002", customer: "Anu Priya", item: "Masala Dosa", amount: 90, status: "preparing", date: daysAgo(0) },
+    { id: "#1003", customer: "Meena Iyer", item: "Cold Coffee", amount: 70, status: "done", date: daysAgo(0) },
+    { id: "#1004", customer: "Suresh M", item: "Paneer Butter Masala", amount: 180, status: "pending", date: daysAgo(1) },
+    { id: "#1005", customer: "Divya S", item: "Veg Fried Rice", amount: 130, status: "preparing", date: daysAgo(2) },
+    { id: "#1006", customer: "Karthik R", item: "Gulab Jamun", amount: 60, status: "done", date: daysAgo(4) },
+    { id: "#1007", customer: "Anu Priya", item: "Chicken Biryani", amount: 220, status: "pending", date: daysAgo(9) },
+  ];
+
+  const topItems = [
+    { name: "Chicken Biryani", sold: 42 },
+    { name: "Masala Dosa", sold: 35 },
+    { name: "Cold Coffee", sold: 28 },
+    { name: "Paneer Butter Masala", sold: 20 },
+  ];
+
+  function renderStats() {
+    const totalOrders = orders.length;
+    const revenue = orders.reduce((sum, o) => sum + o.amount, 0);
+    const pending = orders.filter(o => o.status === "pending").length;
+    const avgOrder = Math.round(revenue / totalOrders);
+
+    const stats = [
+      { label: "Total Orders Today", value: totalOrders },
+      { label: "Revenue Today", value: "₹" + revenue },
+      { label: "Pending Orders", value: pending },
+      { label: "Avg Order Value", value: "₹" + avgOrder },
+    ];
+
+    const grid = document.getElementById("statsGrid");
+    grid.innerHTML = stats.map(s => `
+      <div class="stat-card">
+        <div class="label">${s.label}</div>
+        <div class="value">${s.value}</div>
+      </div>
+    `).join("");
+  }
+
+  function renderOrders(list) {
+    const body = document.getElementById("ordersBody");
+    body.innerHTML = list.map(o => `
+      <tr>
+        <td>${o.id}</td>
+        <td>${o.customer}</td>
+        <td>${o.item}</td>
+        <td>₹${o.amount}</td>
+        <td><span class="status ${o.status}">${o.status}</span></td>
+      </tr>
+    `).join("");
+  }
+
+  function renderTopItems() {
+    const maxSold = Math.max(...topItems.map(i => i.sold));
+    const container = document.getElementById("topItems");
+    container.innerHTML = topItems.map(i => `
+      <div class="bar-row">
+        <div class="bar-label">${i.name}</div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:${(i.sold / maxSold) * 100}%"></div>
+        </div>
+        <div class="bar-value">${i.sold}</div>
+      </div>
+    `).join("");
+  }
+
+  // ---- FIXED: date + search filtering ----
+  // Bug before: `query` and `dateChoice` were being set to the return value
+  // of addEventListener() (which is always undefined), so the filter never
+  // actually read the input values. There was also a second, separate
+  // listener on the search box that bypassed the date filter completely.
+  // Fixed by reading .value directly and wiring both controls to one
+  // function.
+
+  function getTodayISO() {
+    return isoDate(new Date());
+  }
+
+  function getWeekStartISO() {
+    const d = new Date();
+    d.setDate(d.getDate() - 6); // last 7 days including today
+    return isoDate(d);
+  }
+
+  function applyFilters() {
+    const query = document.getElementById("searchBox").value.toLowerCase();
+    const dateChoice = document.getElementById("dateFilter").value;
+
+    let filtered = orders.filter(o =>
+      o.customer.toLowerCase().includes(query) ||
+      o.item.toLowerCase().includes(query)
+    );
+
+    if (dateChoice === "today") {
+      const today = getTodayISO();
+      filtered = filtered.filter(o => o.date === today);
+    } else if (dateChoice === "week") {
+      const weekStart = getWeekStartISO();
+      const today = getTodayISO();
+      filtered = filtered.filter(o => o.date >= weekStart && o.date <= today);
+    }
+
+    renderOrders(filtered);
+  }
+
+  document.getElementById("searchBox").addEventListener("input", applyFilters);
+  document.getElementById("dateFilter").addEventListener("change", applyFilters);
+
+  // ---- Daily Lucky Draw ----
+  // Picks one random customer from TODAY's orders. Result is stored in
+  // localStorage keyed by date, so refreshing the page the same day shows
+  // the same winner instead of re-rolling, and a new day naturally resets it.
+
+  function getTodaysOrders() {
+    const today = getTodayISO();
+    return orders.filter(o => o.date === today);
+  }
+
+  function renderDrawState() {
+    const today = getTodayISO();
+    const savedWinner = localStorage.getItem("luckyDrawWinner_" + today);
+    const resultEl = document.getElementById("drawResult");
+    const subEl = document.getElementById("drawSub");
+    const btn = document.getElementById("drawBtn");
+    const todaysOrders = getTodaysOrders();
+
+    if (savedWinner) {
+      resultEl.textContent = "🏆 " + savedWinner;
+      subEl.textContent = "Today's winner - come back tomorrow for a new draw!";
+      btn.disabled = true;
+      btn.textContent = "Winner Already Picked";
+    } else if (todaysOrders.length === 0) {
+      resultEl.textContent = "No orders yet today";
+      subEl.textContent = "The draw runs once at least one order comes in today.";
+      btn.disabled = true;
+      btn.textContent = "Pick Today's Winner";
+    } else {
+      resultEl.textContent = "No winner picked yet";
+      subEl.textContent = `${todaysOrders.length} customer(s) eligible today.`;
+      btn.disabled = false;
+      btn.textContent = "Pick Today's Winner";
+    }
+  }
+
+  function pickLuckyWinner() {
+    const todaysOrders = getTodaysOrders();
+    if (todaysOrders.length === 0) return;
+
+    const winnerOrder = todaysOrders[Math.floor(Math.random() * todaysOrders.length)];
+    const today = getTodayISO();
+    localStorage.setItem("luckyDrawWinner_" + today, winnerOrder.customer);
+
+    const resultEl = document.getElementById("drawResult");
+    resultEl.classList.remove("revealed");
+    void resultEl.offsetWidth; // restart animation
+    resultEl.classList.add("revealed");
+
+    renderDrawState();
+  }
+
+  document.getElementById("drawBtn").addEventListener("click", pickLuckyWinner);
+
+  renderStats();
+  renderOrders(orders);
+  renderTopItems();
+  renderDrawState();
+</script>
+
+</body>
+</html>
