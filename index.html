@@ -16,13 +16,43 @@
     background: #d9534f;
     color: white;
     padding: 20px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
   }
 
   header h1 { margin: 0; font-size: 1.6rem; }
   header p { margin: 4px 0 0; opacity: 0.9; font-size: 0.9rem; }
 
+  .live-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.15);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: bold;
+  }
+
+  .live-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #4ade80;
+    animation: pulse 1.4s infinite;
+  }
+
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(74,222,128,0.7); }
+    70% { box-shadow: 0 0 0 7px rgba(74,222,128,0); }
+    100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); }
+  }
+
   main {
-    max-width: 1000px;
+    max-width: 1100px;
     margin: 0 auto;
     padding: 24px;
   }
@@ -40,6 +70,7 @@
     padding: 18px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.08);
     border-left: 5px solid #d9534f;
+    transition: transform 0.15s;
   }
 
   .stat-card .label {
@@ -51,6 +82,15 @@
   .stat-card .value {
     font-size: 1.6rem;
     font-weight: bold;
+  }
+
+  .stat-card.flash {
+    animation: flash 0.6s;
+  }
+
+  @keyframes flash {
+    0% { box-shadow: 0 0 0 3px rgba(217,83,79,0.4); }
+    100% { box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
   }
 
   .panel {
@@ -66,6 +106,16 @@
     font-size: 1.1rem;
   }
 
+  .two-col {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 760px) {
+    .two-col { grid-template-columns: 1fr; }
+  }
+
   table {
     width: 100%;
     border-collapse: collapse;
@@ -79,6 +129,16 @@
   }
 
   th { color: #777; font-weight: 600; }
+
+  tr.new-row {
+    animation: rowIn 0.5s ease-out;
+    background: #fff7ed;
+  }
+
+  @keyframes rowIn {
+    0% { background: #fde68a; }
+    100% { background: transparent; }
+  }
 
   .status {
     padding: 3px 10px;
@@ -132,6 +192,7 @@
   .bar-fill {
     background: #d9534f;
     height: 100%;
+    transition: width 0.4s;
   }
 
   .bar-value {
@@ -193,13 +254,76 @@
   .draw-result.revealed {
     animation: pop 0.35s ease-out;
   }
+
+  /* Frequent customers panel */
+  .freq-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .freq-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: #faf8f3;
+    border-radius: 8px;
+    border-left: 4px solid #d9534f;
+  }
+
+  .freq-name {
+    font-weight: 600;
+    font-size: 0.92rem;
+  }
+
+  .freq-count {
+    font-size: 0.8rem;
+    color: #777;
+  }
+
+  .gift-badge {
+    background: #fde68a;
+    color: #92400e;
+    font-size: 0.72rem;
+    font-weight: bold;
+    padding: 3px 8px;
+    border-radius: 10px;
+    margin-left: 6px;
+    white-space: nowrap;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #2b2b2b;
+    color: white;
+    padding: 12px 18px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.3s, transform 0.3s;
+    pointer-events: none;
+    z-index: 50;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>Burpclock Dashboard</h1>
-  <p>Today's overview - orders, revenue &amp; top items</p>
+  <div>
+    <h1>Burpclock Dashboard</h1>
+    <p>Live overview - orders, revenue &amp; top items</p>
+  </div>
+  <div class="live-badge"><span class="live-dot"></span> LIVE</div>
 </header>
 
 <main>
@@ -213,20 +337,27 @@
     <button id="drawBtn">Pick Today's Winner</button>
   </div>
 
-  <div class="panel">
-    <h2>Recent Orders</h2>
-    <input type="text" id="searchBox" placeholder="Search by customer or item...">
-    <select id="dateFilter">
-      <option value="all">All Dates</option>
-      <option value="today">Today</option>
-      <option value="week">This Week</option>
-    </select>
-    <table>
-      <thead>
-        <tr><th>Order</th><th>Customer</th><th>Item</th><th>Amount</th><th>Status</th></tr>
-      </thead>
-      <tbody id="ordersBody"></tbody>
-    </table>
+  <div class="two-col">
+    <div class="panel">
+      <h2>Recent Orders</h2>
+      <input type="text" id="searchBox" placeholder="Search by customer or item...">
+      <select id="dateFilter">
+        <option value="all">All Dates</option>
+        <option value="today">Today</option>
+        <option value="week">This Week</option>
+      </select>
+      <table>
+        <thead>
+          <tr><th>Order</th><th>Customer</th><th>Item</th><th>Amount</th><th>Status</th></tr>
+        </thead>
+        <tbody id="ordersBody"></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h2>🏆 Frequent Customers</h2>
+      <div class="freq-list" id="freqList"></div>
+    </div>
   </div>
 
   <div class="panel">
@@ -236,14 +367,11 @@
 
 </main>
 
-<script>
-  // Sample data - stands in for what would normally come from a backend/database
-  // NOTE: dates are set relative to "today" at load time (see below) so the
-  // Today / This Week filters and the lucky draw always have live, working data
-  // instead of dates hardcoded to a fixed year that goes stale.
+<div class="toast" id="toast"></div>
 
+<script>
+  // ---------- date helpers ----------
   function isoDate(d) {
-    // returns YYYY-MM-DD in local time (avoids UTC off-by-one issues)
     const yr = d.getFullYear();
     const mo = String(d.getMonth() + 1).padStart(2, "0");
     const day = String(d.getDate()).padStart(2, "0");
@@ -256,6 +384,17 @@
     return isoDate(d);
   }
 
+  function getTodayISO() { return isoDate(new Date()); }
+
+  function getWeekStartISO() {
+    const d = new Date();
+    d.setDate(d.getDate() - 6);
+    return isoDate(d);
+  }
+
+  // ---------- seed data ----------
+  let orderCounter = 1007;
+
   const orders = [
     { id: "#1001", customer: "Ravi Kumar", item: "Chicken Biryani", amount: 220, status: "done", date: daysAgo(0) },
     { id: "#1002", customer: "Anu Priya", item: "Masala Dosa", amount: 90, status: "preparing", date: daysAgo(0) },
@@ -264,6 +403,9 @@
     { id: "#1005", customer: "Divya S", item: "Veg Fried Rice", amount: 130, status: "preparing", date: daysAgo(2) },
     { id: "#1006", customer: "Karthik R", item: "Gulab Jamun", amount: 60, status: "done", date: daysAgo(4) },
     { id: "#1007", customer: "Anu Priya", item: "Chicken Biryani", amount: 220, status: "pending", date: daysAgo(9) },
+    { id: "#0999", customer: "Ravi Kumar", item: "Cold Coffee", amount: 70, status: "done", date: daysAgo(1) },
+    { id: "#0998", customer: "Ravi Kumar", item: "Masala Dosa", amount: 90, status: "done", date: daysAgo(3) },
+    { id: "#0997", customer: "Anu Priya", item: "Veg Fried Rice", amount: 130, status: "done", date: daysAgo(2) },
   ];
 
   const topItems = [
@@ -273,6 +415,20 @@
     { name: "Paneer Butter Masala", sold: 20 },
   ];
 
+  // Pool used to simulate new customers arriving live.
+  // (Clearly fictional sample data - stands in for a real order stream.)
+  const namePool = ["Priya N", "Arjun V", "Lakshmi T", "Vignesh K", "Sneha R",
+                     "Ravi Kumar", "Anu Priya", "Meena Iyer", "Deepak S", "Nithya P"];
+  const itemPool = [
+    { name: "Chicken Biryani", price: 220 },
+    { name: "Masala Dosa", price: 90 },
+    { name: "Cold Coffee", price: 70 },
+    { name: "Paneer Butter Masala", price: 180 },
+    { name: "Veg Fried Rice", price: 130 },
+    { name: "Gulab Jamun", price: 60 },
+  ];
+
+  // ---------- rendering ----------
   function renderStats() {
     const totalOrders = orders.length;
     const revenue = orders.reduce((sum, o) => sum + o.amount, 0);
@@ -280,25 +436,29 @@
     const avgOrder = Math.round(revenue / totalOrders);
 
     const stats = [
-      { label: "Total Orders Today", value: totalOrders },
-      { label: "Revenue Today", value: "₹" + revenue },
+      { label: "Total Orders", value: totalOrders },
+      { label: "Total Revenue", value: "₹" + revenue },
       { label: "Pending Orders", value: pending },
       { label: "Avg Order Value", value: "₹" + avgOrder },
     ];
 
     const grid = document.getElementById("statsGrid");
     grid.innerHTML = stats.map(s => `
-      <div class="stat-card">
+      <div class="stat-card flash">
         <div class="label">${s.label}</div>
         <div class="value">${s.value}</div>
       </div>
     `).join("");
   }
 
+  let lastAddedId = null;
+
   function renderOrders(list) {
     const body = document.getElementById("ordersBody");
-    body.innerHTML = list.map(o => `
-      <tr>
+    // newest first
+    const sorted = [...list].reverse();
+    body.innerHTML = sorted.map(o => `
+      <tr class="${o.id === lastAddedId ? 'new-row' : ''}">
         <td>${o.id}</td>
         <td>${o.customer}</td>
         <td>${o.item}</td>
@@ -322,24 +482,31 @@
     `).join("");
   }
 
-  // ---- FIXED: date + search filtering ----
-  // Bug before: `query` and `dateChoice` were being set to the return value
-  // of addEventListener() (which is always undefined), so the filter never
-  // actually read the input values. There was also a second, separate
-  // listener on the search box that bypassed the date filter completely.
-  // Fixed by reading .value directly and wiring both controls to one
-  // function.
+  // Frequent customers: count orders per customer across ALL data (not just today).
+  // 3+ orders = eligible for a free gift badge.
+  function renderFrequentCustomers() {
+    const counts = {};
+    orders.forEach(o => {
+      counts[o.customer] = (counts[o.customer] || 0) + 1;
+    });
 
-  function getTodayISO() {
-    return isoDate(new Date());
+    const ranked = Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6);
+
+    const container = document.getElementById("freqList");
+    container.innerHTML = ranked.map(([name, count]) => `
+      <div class="freq-row">
+        <div>
+          <div class="freq-name">${name}</div>
+          <div class="freq-count">${count} order${count > 1 ? "s" : ""}</div>
+        </div>
+        ${count >= 3 ? '<span class="gift-badge">🎁 Free Gift</span>' : ''}
+      </div>
+    `).join("");
   }
 
-  function getWeekStartISO() {
-    const d = new Date();
-    d.setDate(d.getDate() - 6); // last 7 days including today
-    return isoDate(d);
-  }
-
+  // ---------- search + date filter ----------
   function applyFilters() {
     const query = document.getElementById("searchBox").value.toLowerCase();
     const dateChoice = document.getElementById("dateFilter").value;
@@ -364,11 +531,7 @@
   document.getElementById("searchBox").addEventListener("input", applyFilters);
   document.getElementById("dateFilter").addEventListener("change", applyFilters);
 
-  // ---- Daily Lucky Draw ----
-  // Picks one random customer from TODAY's orders. Result is stored in
-  // localStorage keyed by date, so refreshing the page the same day shows
-  // the same winner instead of re-rolling, and a new day naturally resets it.
-
+  // ---------- lucky draw ----------
   function getTodaysOrders() {
     const today = getTodayISO();
     return orders.filter(o => o.date === today);
@@ -410,7 +573,7 @@
 
     const resultEl = document.getElementById("drawResult");
     resultEl.classList.remove("revealed");
-    void resultEl.offsetWidth; // restart animation
+    void resultEl.offsetWidth;
     resultEl.classList.add("revealed");
 
     renderDrawState();
@@ -418,9 +581,61 @@
 
   document.getElementById("drawBtn").addEventListener("click", pickLuckyWinner);
 
+  // ---------- toast ----------
+  function showToast(msg) {
+    const toast = document.getElementById("toast");
+    toast.textContent = msg;
+    toast.classList.add("show");
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => toast.classList.remove("show"), 2500);
+  }
+
+  // ---------- simulated live feed ----------
+  // Adds a new "incoming" order every few seconds to simulate real-time
+  // activity, then refreshes stats, table, and frequent-customers panel.
+  // This is a front-end simulation only (no real backend/socket connection) -
+  // it stands in for what a live order stream would look like.
+  function simulateNewOrder() {
+    orderCounter++;
+    const name = namePool[Math.floor(Math.random() * namePool.length)];
+    const item = itemPool[Math.floor(Math.random() * itemPool.length)];
+    const statuses = ["pending", "preparing"];
+    const newOrder = {
+      id: "#" + (1000 + orderCounter),
+      customer: name,
+      item: item.name,
+      amount: item.price,
+      status: statuses[Math.floor(Math.random() * statuses.length)],
+      date: getTodayISO(),
+    };
+
+    orders.push(newOrder);
+    lastAddedId = newOrder.id;
+
+    renderStats();
+    applyFilters();
+    renderFrequentCustomers();
+    renderDrawState();
+    showToast(`🛎️ New order from ${name} - ${item.name}`);
+
+    // a couple seconds later, randomly mark it "done" to simulate kitchen progress
+    setTimeout(() => {
+      const o = orders.find(x => x.id === newOrder.id);
+      if (o && Math.random() > 0.3) {
+        o.status = "done";
+        applyFilters();
+      }
+    }, 4000);
+  }
+
+  // fire a new simulated order every 6 seconds
+  setInterval(simulateNewOrder, 6000);
+
+  // ---------- init ----------
   renderStats();
   renderOrders(orders);
   renderTopItems();
+  renderFrequentCustomers();
   renderDrawState();
 </script>
 
