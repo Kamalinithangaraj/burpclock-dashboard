@@ -1,5 +1,5 @@
 # Burpclock Dashboard
-
+# "Live demo: https://kamalinithangaraj.github.io/burpclock-dashboard/"
 A restaurant operations dashboard with a simulated live order feed.
 
 ## What it shows
