@@ -1,6 +1,7 @@
 # Burpclock Dashboard
 # "Live demo: https://kamalinithangaraj.github.io/burpclock-dashboard/"
 A restaurant operations dashboard with a simulated live order feed.
+![Burpclock dashboard screenshot](screenshot.png)
 
 ## What it shows
 - Stat cards: total orders, revenue, pending orders, average order value
